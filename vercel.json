@@ -1,0 +1,6 @@
+{
+  "installCommand": "npm install",
+  "buildCommand": "npm run client:generate",
+  "outputDirectory": "client/.output/public",
+  "framework": null
+}

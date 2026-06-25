@@ -9,6 +9,7 @@
     "server:dev": "tsx watch server/src/index.ts",
     "build": "npm run client:build && npm run server:build",
     "client:build": "nuxi build client",
+    "client:generate": "nuxi generate client",
     "server:build": "tsc -p server/tsconfig.json",
     "typecheck": "vue-tsc --noEmit -p client/tsconfig.json && tsc -p server/tsconfig.json --noEmit"
   },

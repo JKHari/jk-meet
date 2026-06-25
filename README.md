@@ -20,6 +20,12 @@ Frontend: `http://127.0.0.1:3000`
 
 Backend: `http://127.0.0.1:4000`
 
+## Deploy Roots
+
+Frontend root directory: `.`, using `vercel.json`. Set `NUXT_PUBLIC_API_BASE` in Vercel to your backend URL.
+
+Backend root directory: `server`, with build command `npm run build` and start command `npm run start`.
+
 ## Architecture
 
 - `data/*.json`: seed users and meeting templates
