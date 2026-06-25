@@ -18,10 +18,22 @@ Build command:
 npm install && npm run build
 ```
 
+If your host requires the same backend build command used by the root project, this also works:
+
+```bash
+npm install && npm run server:build
+```
+
 Start command:
 
 ```bash
 npm run start
+```
+
+Do not use the frontend build command here. If the deploy log says `Missing script: "client:generate"`, the backend project is using the wrong build command. Change it to:
+
+```bash
+npm install && npm run build
 ```
 
 Environment variables:
