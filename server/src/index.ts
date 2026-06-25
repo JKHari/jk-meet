@@ -20,6 +20,7 @@ import {
 import type { MediaState } from "./types.js";
 
 const port = Number(process.env.PORT ?? 4000);
+const host = process.env.HOST ?? "0.0.0.0";
 const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://127.0.0.1:3000";
 
 const app = express();
@@ -33,6 +34,15 @@ const io = new Server(server, {
 
 app.use(cors({ origin: clientOrigin }));
 app.use(express.json());
+
+app.get("/", (_req, res) => {
+  res.json({
+    name: "Peace Mind Meet API",
+    ok: true,
+    storage: "in-memory",
+    endpoints: ["/health", "/api/bootstrap", "/api/meetings"]
+  });
+});
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, storage: "in-memory", redis: false, database: false });
@@ -169,6 +179,6 @@ io.on("connection", (socket) => {
 
 setInterval(cleanupExpiredRooms, 60 * 1000).unref();
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`Meet API running at http://127.0.0.1:${port}`);
+server.listen(port, host, () => {
+  console.log(`Meet API running at http://${host}:${port}`);
 });
