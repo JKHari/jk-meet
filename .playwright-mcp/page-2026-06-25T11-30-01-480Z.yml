@@ -1,0 +1,34 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e7]
+      - generic [ref=e10]:
+        - paragraph [ref=e11]: Peace Mind Meet
+        - paragraph [ref=e12]: In-memory WebRTC meetings
+    - generic [ref=e13]:
+      - img [ref=e14]
+      - generic [ref=e19]: 0 active rooms
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - paragraph [ref=e22]: Browser video meetings without DB or Redis
+      - heading "Video calls that live entirely in memory." [level=1] [ref=e23]
+      - paragraph [ref=e24]: Create a meeting, join with a code, test audio/video, chat, and exchange WebRTC signals through a Node.js server. Runtime state is stored in Maps and disappears when the server restarts.
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: Display name
+          - textbox "Display name" [ref=e29]:
+            - /placeholder: Your name
+        - generic [ref=e30]:
+          - generic [ref=e31]: Meeting title
+          - textbox "Meeting title" [ref=e32]:
+            - /placeholder: Team sync
+        - button "New meeting" [ref=e33] [cursor=pointer]:
+          - img [ref=e34]
+          - text: New meeting
+        - generic [ref=e36]:
+          - textbox "abc-def-ghi" [ref=e37]
+          - button "Join" [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+            - text: Join
+      - paragraph [ref=e43]: JSON meeting templates
