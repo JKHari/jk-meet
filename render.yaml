@@ -3,8 +3,8 @@ services:
     name: peace-mind-meet-api
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: npm install && npm run server:build
+    startCommand: node server/dist/index.js
     healthCheckPath: /health
     envVars:
       - key: CLIENT_ORIGIN

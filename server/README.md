@@ -1,6 +1,6 @@
 # Peace Mind Meet API
 
-Deploy this folder as the backend root on a persistent Node.js host such as Render, Railway, Fly.io, or a VPS.
+Deploy the project root as the backend root on a persistent Node.js host such as Render, Railway, Fly.io, or a VPS. This repo uses only the root `package.json`; there is no separate `server/package.json`.
 
 Do not use Vercel for this backend. The API uses Express, Socket.IO WebSockets, and in-memory meeting state, which need a long-running server process.
 
@@ -9,16 +9,10 @@ Do not use Vercel for this backend. The API uses Express, Socket.IO WebSockets, 
 Root directory:
 
 ```txt
-server
+.
 ```
 
 Build command:
-
-```bash
-npm install && npm run build
-```
-
-If your host requires the same backend build command used by the root project, this also works:
 
 ```bash
 npm install && npm run server:build
@@ -27,13 +21,13 @@ npm install && npm run server:build
 Start command:
 
 ```bash
-npm run start
+node server/dist/index.js
 ```
 
 Do not use the frontend build command here. If the deploy log says `Missing script: "client:generate"`, the backend project is using the wrong build command. Change it to:
 
 ```bash
-npm install && npm run build
+npm install && npm run server:build
 ```
 
 Environment variables:

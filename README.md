@@ -30,11 +30,11 @@ Backend: `http://127.0.0.1:5000`
 
 Frontend root directory: `.`, using `vercel.json`. Set `NUXT_PUBLIC_API_BASE` in Vercel to your backend URL.
 
-Backend root directory: `server`, with build command `npm run build` and start command `npm run start`.
+Backend root directory: `.`, with build command `npm run server:build` and start command `node server/dist/index.js`.
 
 ## Architecture
 
-- `data/*.json`: seed users and meeting templates
+- `server/data/*.json`: seed users and meeting templates
 - `server/src/store.ts`: in-memory room, participant, and message Maps
 - `server/src/index.ts`: Express REST API and Socket.IO signaling server
 - `client/pages/index.vue`: create/join meeting screen
