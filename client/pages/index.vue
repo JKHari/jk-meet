@@ -75,7 +75,7 @@
             <input
               v-model="roomCode"
               class="h-12 rounded-lg border border-meet-line px-4 lowercase outline-none transition focus:border-meet-blue focus:ring-2 focus:ring-blue-100"
-              placeholder="abc-def-ghi"
+              placeholder="uih-hhd-erb"
               type="text"
               @keyup.enter="joinMeeting()"
             />
@@ -160,14 +160,15 @@ async function createMeeting(title?: string) {
   loading.value = true;
   try {
     persistName();
-    const response = await $fetch<{ room: PublicRoom }>(`${apiBase}/api/meetings`, {
+    const response = await $fetch<{ room: PublicRoom; hostToken: string }>(`${apiBase}/api/meetings`, {
       method: "POST",
       body: {
         hostName: displayName.value.trim() || "Guest",
         title: title || meetingTitle.value
       }
     });
-    await navigateTo(`/meeting/${response.room.id}?name=${encodeURIComponent(displayName.value.trim() || "Guest")}`);
+    sessionStorage.setItem(`meet.hostToken.${response.room.id}`, response.hostToken);
+    await navigateTo(`/meeting/${response.room.id}`);
   } catch {
     errorMessage.value = "Could not create the meeting.";
   } finally {
@@ -182,12 +183,17 @@ async function joinMeeting(code = roomCode.value) {
     return;
   }
 
+  if (!/^[a-z]{3}-[a-z]{3}-[a-z]{3}$/.test(cleaned)) {
+    errorMessage.value = "Use meeting code format uih-hhd-erb.";
+    return;
+  }
+
   errorMessage.value = "";
   loading.value = true;
   try {
     persistName();
     await $fetch(`${apiBase}/api/meetings/${cleaned}/join`, { method: "POST" });
-    await navigateTo(`/meeting/${cleaned}?name=${encodeURIComponent(displayName.value.trim() || "Guest")}`);
+    await navigateTo(`/meeting/${cleaned}`);
   } catch {
     errorMessage.value = "Meeting not found or expired.";
   } finally {
@@ -200,4 +206,3 @@ onMounted(() => {
   void loadBootstrap();
 });
 </script>
-
