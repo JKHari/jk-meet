@@ -16,9 +16,19 @@ export type PublicRoom = {
   id: string;
   title: string;
   hostName: string;
+  hostId: string | null;
   createdAt: number;
   expiresAt: number;
   participantCount: number;
+  pendingCount: number;
+};
+
+export type PublicPendingParticipant = {
+  id: string;
+  socketId: string;
+  displayName: string;
+  requestedAt: number;
+  media: MediaState;
 };
 
 export type ChatMessage = {

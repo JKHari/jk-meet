@@ -9,6 +9,12 @@ Runtime meeting data is intentionally kept in memory:
 - No Kafka
 - JSON files are used only as seed/mock data
 
+Meeting links use lowercase letter-only codes:
+
+```txt
+uih-hhd-erb
+```
+
 ## Run
 
 ```bash
@@ -18,7 +24,7 @@ npm run dev
 
 Frontend: `http://127.0.0.1:3000`
 
-Backend: `http://127.0.0.1:4000`
+Backend: `http://127.0.0.1:5000`
 
 ## Deploy Roots
 
@@ -34,4 +40,4 @@ Backend root directory: `server`, with build command `npm run build` and start c
 - `client/pages/index.vue`: create/join meeting screen
 - `client/pages/meeting/[roomId].vue`: media preview, WebRTC mesh room, chat, participants
 
-This version uses browser WebRTC mesh. It is suitable for small meetings and prototypes. Larger rooms would need an SFU such as mediasoup.
+This version uses browser WebRTC mesh. Socket.IO is only for signaling, chat, and participant state. Camera, microphone, and screen-share media are sent through WebRTC as SRTP media, which normally uses UDP through ICE. Larger rooms would need an SFU such as mediasoup.

@@ -2,26 +2,30 @@ import http from "node:http";
 import cors from "cors";
 import express from "express";
 import { Server } from "socket.io";
+import { isMeetingCode, normalizeMeetingCode } from "./ids.js";
 import { getSeedRooms, getSeedUsers } from "./seed.js";
 import {
   addMessage,
+  approvePendingParticipant,
   cleanupExpiredRooms,
   createRoom,
+  denyPendingParticipant,
   getMessages,
   getParticipant,
+  getPublicPendingParticipants,
   getPublicParticipants,
   getRoom,
-  joinRoom,
   leaveRoom,
   listRooms,
+  requestJoinRoom,
   serializeRoom,
   updateMediaState
 } from "./store.js";
 import type { MediaState } from "./types.js";
 
-const port = Number(process.env.PORT ?? 4000);
+const port = Number(process.env.PORT ?? 5000);
 const host = process.env.HOST ?? "0.0.0.0";
-const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://127.0.0.1:3000";
+const clientOrigin =  "http://127.0.0.1:3000";
 
 const app = express();
 const server = http.createServer(app);
@@ -65,11 +69,17 @@ app.post("/api/meetings", (req, res) => {
   const hostName = String(req.body?.hostName ?? "Guest");
   const title = typeof req.body?.title === "string" ? req.body.title : undefined;
   const room = createRoom(hostName, title);
-  res.status(201).json({ room: serializeRoom(room) });
+  res.status(201).json({ room: serializeRoom(room), hostToken: room.hostToken });
 });
 
 app.get("/api/meetings/:roomId", (req, res) => {
-  const room = getRoom(req.params.roomId);
+  const roomId = normalizeMeetingCode(req.params.roomId);
+  if (!isMeetingCode(roomId)) {
+    res.status(400).json({ message: "Meeting code must use the format uih-hhd-erb" });
+    return;
+  }
+
+  const room = getRoom(roomId);
   if (!room) {
     res.status(404).json({ message: "Meeting not found or expired" });
     return;
@@ -78,12 +88,19 @@ app.get("/api/meetings/:roomId", (req, res) => {
   res.json({
     room: serializeRoom(room),
     participants: getPublicParticipants(room.id),
+    pendingParticipants: getPublicPendingParticipants(room.id),
     messages: getMessages(room.id)
   });
 });
 
 app.post("/api/meetings/:roomId/join", (req, res) => {
-  const room = getRoom(req.params.roomId);
+  const roomId = normalizeMeetingCode(req.params.roomId);
+  if (!isMeetingCode(roomId)) {
+    res.status(400).json({ message: "Meeting code must use the format uih-hhd-erb" });
+    return;
+  }
+
+  const room = getRoom(roomId);
   if (!room) {
     res.status(404).json({ message: "Meeting not found or expired" });
     return;
@@ -93,35 +110,119 @@ app.post("/api/meetings/:roomId/join", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  socket.on("join-room", (payload: { roomId: string; displayName: string; media: MediaState }, ack) => {
-    const participant = joinRoom(payload.roomId, socket.id, payload.displayName, payload.media);
-    const room = getRoom(payload.roomId);
+  socket.on("request-join", (payload: { roomId: string; displayName: string; media: MediaState; hostToken?: string }, ack) => {
+    const roomId = normalizeMeetingCode(payload.roomId);
+    if (!isMeetingCode(roomId)) {
+      ack?.({ ok: false, message: "Meeting code must use the format uih-hhd-erb" });
+      return;
+    }
 
-    if (!participant || !room) {
+    const result = requestJoinRoom(roomId, socket.id, payload.displayName, payload.media, payload.hostToken);
+    const room = getRoom(roomId);
+
+    if (!result || !room) {
       ack?.({ ok: false, message: "Meeting not found or expired" });
       return;
     }
 
-    socket.join(payload.roomId);
-    const participants = getPublicParticipants(payload.roomId);
+    if (result.autoApproved && result.participant) {
+      socket.join(roomId);
+      ack?.({
+        ok: true,
+        status: "approved",
+        selfId: socket.id,
+        room: serializeRoom(room),
+        participants: getPublicParticipants(roomId),
+        pendingParticipants: getPublicPendingParticipants(roomId),
+        messages: getMessages(roomId)
+      });
+      return;
+    }
 
     ack?.({
       ok: true,
-      selfId: socket.id,
-      room: serializeRoom(room),
-      participants,
-      messages: getMessages(payload.roomId)
+      status: "waiting",
+      room: serializeRoom(room)
     });
 
-    socket.to(payload.roomId).emit("participant-joined", {
-      participant: {
-        id: participant.id,
-        socketId: participant.socketId,
-        displayName: participant.displayName,
-        joinedAt: participant.joinedAt,
-        media: participant.media
-      }
+    if (result.pending && room.hostId) {
+      io.to(room.hostId).emit("join-requested", { pendingParticipant: result.pending });
+    }
+  });
+
+  socket.on("approve-join", (payload: { roomId: string; pendingId: string }, ack) => {
+    const roomId = normalizeMeetingCode(payload.roomId);
+    if (!isMeetingCode(roomId)) {
+      ack?.({ ok: false, message: "Meeting code must use the format uih-hhd-erb" });
+      return;
+    }
+
+    const result = approvePendingParticipant(roomId, payload.pendingId, socket.id);
+    if (!result) {
+      ack?.({ ok: false, message: "Only the host can admit this participant." });
+      return;
+    }
+
+    const pendingSocket = io.sockets.sockets.get(result.participant.socketId);
+    pendingSocket?.join(roomId);
+
+    const room = serializeRoom(result.room);
+    const participants = getPublicParticipants(roomId);
+    const pendingParticipants = getPublicPendingParticipants(roomId);
+
+    pendingSocket?.emit("join-approved", {
+      selfId: result.participant.id,
+      room,
+      participants,
+      pendingParticipants,
+      messages: getMessages(roomId)
     });
+
+    pendingSocket?.to(roomId).emit("participant-joined", {
+      participant: {
+        id: result.participant.id,
+        socketId: result.participant.socketId,
+        displayName: result.participant.displayName,
+        joinedAt: result.participant.joinedAt,
+        media: result.participant.media
+      },
+      room
+    });
+
+    io.to(roomId).emit("pending-participant-removed", {
+      pendingId: payload.pendingId,
+      pendingParticipants,
+      room
+    });
+
+    ack?.({ ok: true });
+  });
+
+  socket.on("deny-join", (payload: { roomId: string; pendingId: string }, ack) => {
+    const roomId = normalizeMeetingCode(payload.roomId);
+    if (!isMeetingCode(roomId)) {
+      ack?.({ ok: false, message: "Meeting code must use the format uih-hhd-erb" });
+      return;
+    }
+
+    const result = denyPendingParticipant(roomId, payload.pendingId, socket.id);
+    if (!result) {
+      ack?.({ ok: false, message: "Only the host can deny this participant." });
+      return;
+    }
+
+    io.to(result.pending.socketId).emit("join-denied", {
+      message: "The host did not admit you to this meeting."
+    });
+
+    const room = serializeRoom(result.room);
+    io.to(roomId).emit("pending-participant-removed", {
+      pendingId: payload.pendingId,
+      pendingParticipants: getPublicPendingParticipants(roomId),
+      room
+    });
+
+    ack?.({ ok: true });
   });
 
   socket.on("media-state-changed", (media: MediaState) => {
@@ -171,9 +272,29 @@ io.on("connection", (socket) => {
       return;
     }
 
+    if (result.pending) {
+      socket.to(result.room.id).emit("pending-participant-removed", {
+        pendingId: result.pending.id,
+        pendingParticipants: getPublicPendingParticipants(result.room.id),
+        room: serializeRoom(result.room)
+      });
+      return;
+    }
+
+    if (!result.participant) {
+      return;
+    }
+
     socket.to(result.room.id).emit("participant-left", {
-      participantId: result.participant.id
+      participantId: result.participant.id,
+      room: serializeRoom(result.room)
     });
+
+    if (result.hostChanged) {
+      socket.to(result.room.id).emit("host-changed", {
+        room: serializeRoom(result.room)
+      });
+    }
   });
 });
 

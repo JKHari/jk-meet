@@ -4,7 +4,23 @@ export function createEntityId(prefix: string) {
   return `${prefix}_${randomUUID()}`;
 }
 
+export function createHostToken() {
+  return randomUUID();
+}
+
+export const meetingCodePattern = /^[a-z]{3}-[a-z]{3}-[a-z]{3}$/;
+
 export function createMeetingCode() {
-  const raw = randomBytes(5).toString("base64url").replace(/[^a-zA-Z0-9]/g, "");
-  return raw.slice(0, 9).replace(/(.{3})(.{3})(.{3})/, "$1-$2-$3").toLowerCase();
+  const letters = "abcdefghijklmnopqrstuvwxyz";
+  const bytes = randomBytes(9);
+  const code = [...bytes].map((byte) => letters[byte % letters.length]).join("");
+  return `${code.slice(0, 3)}-${code.slice(3, 6)}-${code.slice(6, 9)}`;
+}
+
+export function normalizeMeetingCode(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export function isMeetingCode(value: string) {
+  return meetingCodePattern.test(value);
 }

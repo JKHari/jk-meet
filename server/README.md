@@ -40,7 +40,7 @@ Environment variables:
 
 ```env
 CLIENT_ORIGIN=https://your-frontend.vercel.app
-PORT=4000
+PORT=5000
 ```
 
 ## Health Checks
@@ -52,3 +52,11 @@ PORT=4000
 ```
 
 The backend stores runtime data in memory. Meetings disappear when the service restarts, and the service should run as a single instance unless a shared state layer is added later.
+
+Meeting codes are generated as lowercase letters in this format:
+
+```txt
+uih-hhd-erb
+```
+
+Socket.IO handles signaling and room events only. Browser media uses WebRTC SRTP, which normally travels over UDP through ICE.

@@ -13,6 +13,15 @@ export type ParticipantState = {
   media: MediaState;
 };
 
+export type PendingParticipantState = {
+  id: string;
+  socketId: string;
+  roomId: string;
+  displayName: string;
+  requestedAt: number;
+  media: MediaState;
+};
+
 export type ChatMessage = {
   id: string;
   roomId: string;
@@ -26,20 +35,26 @@ export type RoomState = {
   id: string;
   title: string;
   hostName: string;
+  hostToken: string;
+  hostId: string | null;
   createdAt: number;
   expiresAt: number;
   participants: Map<string, ParticipantState>;
+  pendingParticipants: Map<string, PendingParticipantState>;
 };
 
 export type PublicParticipant = Omit<ParticipantState, "roomId">;
+export type PublicPendingParticipant = Omit<PendingParticipantState, "roomId">;
 
 export type PublicRoom = {
   id: string;
   title: string;
   hostName: string;
+  hostId: string | null;
   createdAt: number;
   expiresAt: number;
   participantCount: number;
+  pendingCount: number;
 };
 
 export type SeedRoom = {
