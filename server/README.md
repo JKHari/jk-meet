@@ -43,6 +43,22 @@ CLIENT_ORIGIN=https://your-frontend.vercel.app
 PORT=5000
 ```
 
+For a custom frontend domain:
+
+```env
+CLIENT_ORIGIN=https://test.meet.com
+```
+
+If you set `CLIENT_ORIGIN=test.meet.com`, the backend normalizes it to `https://test.meet.com`.
+
+For multiple frontend origins, use comma-separated `CLIENT_ORIGINS`:
+
+```env
+CLIENT_ORIGINS=https://test.meet.com,https://preview-test.meet.com
+```
+
+`PORT` is optional on most backend hosts. If the host provides `PORT`, the server uses it. If not, it defaults to `5000`.
+
 ## Health Checks
 
 ```txt

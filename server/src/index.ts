@@ -25,18 +25,66 @@ import type { MediaState } from "./types.js";
 
 const port = Number(process.env.PORT ?? 5000);
 const host = process.env.HOST ?? "0.0.0.0";
-const clientOrigin =  "http://127.0.0.1:3000";
+const defaultOrigins = ["http://127.0.0.1:3000", "http://localhost:3000"];
+
+function normalizeOrigin(value: string) {
+  const trimmed = value.trim().replace(/\/$/, "");
+  if (!trimmed) {
+    return "";
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
+}
+
+const configuredOrigins = [process.env.CLIENT_ORIGIN, process.env.CLIENT_ORIGINS]
+  .filter(Boolean)
+  .flatMap((value) => String(value).split(","))
+  .map(normalizeOrigin)
+  .filter(Boolean);
+const allowedOrigins = new Set([...defaultOrigins, ...configuredOrigins]);
+
+function isAllowedOrigin(origin?: string) {
+  if (!origin) {
+    return true;
+  }
+
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (allowedOrigins.has(normalizedOrigin)) {
+    return true;
+  }
+
+  try {
+    const { hostname } = new URL(normalizedOrigin);
+    return hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
+  }
+}
+
+const corsOptions = {
+  origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+    if (isAllowedOrigin(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
+  methods: ["GET", "POST"],
+  credentials: false
+};
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: {
-    origin: clientOrigin,
-    methods: ["GET", "POST"]
-  }
+  cors: corsOptions
 });
 
-app.use(cors({ origin: clientOrigin }));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.get("/", (_req, res) => {
